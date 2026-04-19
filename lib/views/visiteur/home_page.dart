@@ -1,513 +1,6 @@
-// import 'package:flutter/material.dart';
-// import 'package:mts_medico_dentaire/style/constants/app_colors.dart'
-//     show AppColors;
-// import '../style/constants/app_dimens.dart';
-// import '../style/constants/app_routes.dart';
-// import '../widgets/app_search_bar.dart';
-// import '../widgets/info_card.dart';
-// import '../widgets/login_link.dart';
-// import '../widgets/nav_item.dart';
-
-// class HomePage extends StatefulWidget {
-//   const HomePage({super.key});
-
-//   @override
-//   State<HomePage> createState() => _HomePageState();
-// }
-
-// class _HomePageState extends State<HomePage> {
-//   final TextEditingController _searchController = TextEditingController();
-//   bool _menuOpen = false;
-
-//   @override
-//   void dispose() {
-//     _searchController.dispose();
-//     super.dispose();
-//   }
-
-//   // ── Helpers responsive ──────────────────────────────────────
-//   bool get _isMobile =>
-//       MediaQuery.of(context).size.width < AppDimens.mobileBreak;
-//   bool get _isTablet =>
-//       MediaQuery.of(context).size.width >= AppDimens.mobileBreak &&
-//       MediaQuery.of(context).size.width < AppDimens.tabletBreak;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       body: Stack(
-//         children: [_buildBackground(), _buildOverlay(), _buildBody()],
-//       ),
-//     );
-//   }
-
-//   // ──────────────────────────────────────────────────────────────
-//   // BACKGROUND & OVERLAY
-//   // ──────────────────────────────────────────────────────────────
-
-//   Widget _buildBackground() {
-//     return SizedBox.expand(
-//       child: Image.asset('images/backg4.jpg', fit: BoxFit.cover),
-//     );
-//   }
-
-//   Widget _buildOverlay() {
-//     return Container(
-//       decoration: const BoxDecoration(
-//         gradient: LinearGradient(
-//           begin: Alignment.topCenter,
-//           end: Alignment.bottomCenter,
-//           colors: [
-//             AppColors.bannerGradTop,
-//             AppColors.bannerGradMid,
-//             AppColors.bannerGradBottom,
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-
-//   // ──────────────────────────────────────────────────────────────
-//   // BODY PRINCIPAL
-//   // ──────────────────────────────────────────────────────────────
-
-//   Widget _buildBody() {
-//     return Column(
-//       children: [
-//         SafeArea(child: _buildNavbar()),
-//         if (_isMobile && _menuOpen) _buildMobileMenu(),
-//         const Spacer(),
-//         _buildHeroText(),
-//         const Spacer(),
-//         _buildInfoBar(),
-//       ],
-//     );
-//   }
-
-//   // ──────────────────────────────────────────────────────────────
-//   // NAVBAR
-//   // ──────────────────────────────────────────────────────────────
-
-//   Widget _buildNavbar() {
-//     return Container(
-//       height:
-//           _isMobile
-//               ? AppDimens.navbarHeightMobile
-//               : AppDimens.navbarHeightDesktop,
-//       margin: EdgeInsets.symmetric(
-//         horizontal:
-//             _isMobile ? AppDimens.navbarMarginHMobile : AppDimens.navbarMarginH,
-//         vertical: AppDimens.navbarMarginV,
-//       ),
-//       padding: const EdgeInsets.symmetric(horizontal: 16),
-//       decoration: BoxDecoration(
-//         color: AppColors.navbarBg,
-//         borderRadius: BorderRadius.circular(AppDimens.navbarRadius),
-//         boxShadow: [
-//           BoxShadow(
-//             color: Colors.black.withOpacity(0.08),
-//             blurRadius: 12,
-//             offset: const Offset(0, 4),
-//           ),
-//         ],
-//       ),
-//       child: Row(
-//         children: [
-//           _buildLogo(),
-//           const SizedBox(width: 10),
-//           if (!_isMobile) _buildLogoText(),
-//           const Spacer(),
-//           if (!_isMobile) ..._buildDesktopNavLinks(),
-//           if (!_isMobile) const SizedBox(width: 8),
-//           if (!_isMobile) _buildSearchBar(),
-//           if (!_isMobile) const SizedBox(width: 14),
-//           if (!_isMobile) _buildLoginLink(),
-//           if (_isMobile) _buildHamburger(),
-//         ],
-//       ),
-//     );
-//   }
-
-//   Widget _buildLogo() {
-//     return Image.asset(
-//       'images/logo1.png',
-//       height:
-//           _isMobile ? AppDimens.logoHeightMobile : AppDimens.logoHeightDesktop,
-//       width: _isMobile ? AppDimens.logoWidthMobile : AppDimens.logoWidthDesktop,
-//       fit: BoxFit.contain,
-//       errorBuilder: (_, __, ___) => _buildLogoFallback(),
-//     );
-//   }
-
-//   Widget _buildLogoFallback() {
-//     return Container(
-//       width: _isMobile ? AppDimens.logoWidthMobile : AppDimens.logoWidthDesktop,
-//       height:
-//           _isMobile ? AppDimens.logoHeightMobile : AppDimens.logoHeightDesktop,
-//       decoration: BoxDecoration(
-//         shape: BoxShape.circle,
-//         border: Border.all(color: AppColors.primary, width: 2),
-//       ),
-//       child: const Icon(
-//         Icons.medical_services_outlined,
-//         color: AppColors.primary,
-//         size: 20,
-//       ),
-//     );
-//   }
-
-//   Widget _buildLogoText() {
-//     return Column(
-//       mainAxisAlignment: MainAxisAlignment.center,
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: const [
-//         Text(
-//           'MTS Médico Dentaire',
-//           style: TextStyle(
-//             fontSize: AppDimens.fontLogoName,
-//             fontWeight: FontWeight.w800,
-//             color: AppColors.primaryDark,
-//             letterSpacing: -0.3,
-//           ),
-//         ),
-//         Text(
-//           'COMPTOIR DENTAIRE',
-//           style: TextStyle(
-//             fontSize: AppDimens.fontLogoSub,
-//             color: AppColors.primary,
-//             letterSpacing: 1.2,
-//             fontWeight: FontWeight.w600,
-//           ),
-//         ),
-//       ],
-//     );
-//   }
-
-//   List<Widget> _buildDesktopNavLinks() {
-//     return [
-//       NavItem(
-//         title: 'Boutique',
-//         onTap: () => Navigator.pushNamed(context, AppRoutes.boutique),
-//       ),
-//       NavItem(
-//         title: 'À Propos',
-//         onTap: () => Navigator.pushNamed(context, AppRoutes.about),
-//       ),
-//       NavItem(
-//         title: 'Contactez-nous',
-//         onTap: () => Navigator.pushNamed(context, AppRoutes.contact),
-//       ),
-//       NavItem(
-//         title: 'CGU',
-//         onTap: () => Navigator.pushNamed(context, AppRoutes.cgu),
-//       ),
-//     ];
-//   }
-
-//   Widget _buildSearchBar() {
-//     return AppSearchBar(
-//       controller: _searchController,
-//       width:
-//           _isTablet
-//               ? AppDimens.searchWidthTablet
-//               : AppDimens.searchWidthDesktop,
-//       onSubmitted:
-//           (val) => Navigator.pushNamed(
-//             context,
-//             AppRoutes.boutique,
-//             arguments: {'query': val},
-//           ),
-//     );
-//   }
-
-//   Widget _buildLoginLink() {
-//     return LoginLink(
-//       onLogin: () => Navigator.pushNamed(context, AppRoutes.login),
-//       onRegister: () => Navigator.pushNamed(context, AppRoutes.register),
-//     );
-//   }
-
-//   Widget _buildHamburger() {
-//     return IconButton(
-//       icon: Icon(
-//         _menuOpen ? Icons.close : Icons.menu,
-//         color: AppColors.primaryDark,
-//       ),
-//       onPressed: () => setState(() => _menuOpen = !_menuOpen),
-//     );
-//   }
-
-//   // ──────────────────────────────────────────────────────────────
-//   // MENU MOBILE DROPDOWN
-//   // ──────────────────────────────────────────────────────────────
-
-//   Widget _buildMobileMenu() {
-//     return Container(
-//       margin: const EdgeInsets.symmetric(
-//         horizontal: AppDimens.navbarMarginHMobile,
-//       ),
-//       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//       decoration: BoxDecoration(
-//         color: AppColors.mobileMenuBg,
-//         borderRadius: BorderRadius.circular(8),
-//         boxShadow: [
-//           BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8),
-//         ],
-//       ),
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.stretch,
-//         children: [
-//           Padding(
-//             padding: const EdgeInsets.only(bottom: 6),
-//             child: AppSearchBar(
-//               controller: _searchController,
-//               hint: 'Chercher un produit...',
-//               onSubmitted: (val) {
-//                 _closeMenu();
-//                 Navigator.pushNamed(
-//                   context,
-//                   AppRoutes.boutique,
-//                   arguments: {'query': val},
-//                 );
-//               },
-//             ),
-//           ),
-//           _buildMobileNavItem(Icons.store_outlined, 'Boutique', () {
-//             _closeMenu();
-//             Navigator.pushNamed(context, AppRoutes.boutique);
-//           }),
-//           _buildMobileNavItem(Icons.info_outline, 'À Propos', () {
-//             _closeMenu();
-//             Navigator.pushNamed(context, AppRoutes.about);
-//           }),
-//           _buildMobileNavItem(Icons.mail_outline, 'Contactez-nous', () {
-//             _closeMenu();
-//             Navigator.pushNamed(context, AppRoutes.contact);
-//           }),
-//           _buildMobileNavItem(Icons.description_outlined, 'CGU', () {
-//             _closeMenu();
-//             Navigator.pushNamed(context, AppRoutes.cgu);
-//           }),
-//           const Divider(height: 16),
-//           GestureDetector(
-//             onTap: () {
-//               _closeMenu();
-//               Navigator.pushNamed(context, AppRoutes.login);
-//             },
-//             child: const Padding(
-//               padding: EdgeInsets.symmetric(vertical: 8),
-//               child: Text(
-//                 "Se connecter / S'inscrire",
-//                 textAlign: TextAlign.center,
-//                 style: TextStyle(
-//                   fontSize: AppDimens.fontConnexion,
-//                   fontWeight: FontWeight.w700,
-//                   color: AppColors.primary,
-//                   decoration: TextDecoration.underline,
-//                   decorationColor: AppColors.primary,
-//                 ),
-//               ),
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-
-//   Widget _buildMobileNavItem(IconData icon, String label, VoidCallback onTap) {
-//     return ListTile(
-//       dense: true,
-//       leading: Icon(icon, color: AppColors.primary, size: 20),
-//       title: Text(
-//         label,
-//         style: const TextStyle(
-//           fontSize: 14,
-//           fontWeight: FontWeight.w600,
-//           color: AppColors.primaryDark,
-//         ),
-//       ),
-//       onTap: onTap,
-//     );
-//   }
-
-//   void _closeMenu() => setState(() => _menuOpen = false);
-
-//   // ──────────────────────────────────────────────────────────────
-//   // HERO TEXT
-//   // ──────────────────────────────────────────────────────────────
-
-//   Widget _buildHeroText() {
-//     return Padding(
-//       padding: const EdgeInsets.symmetric(horizontal: 24),
-//       child: Column(
-//         children: [
-//           Text(
-//             'Bienvenue chez',
-//             style: TextStyle(
-//               color: AppColors.bannerWelcome,
-//               fontSize:
-//                   _isMobile
-//                       ? AppDimens.fontBannerWelcomeMobile
-//                       : AppDimens.fontBannerWelcome,
-//               letterSpacing: 2,
-//               fontWeight: FontWeight.w500,
-//             ),
-//           ),
-//           const SizedBox(height: 12),
-//           Text(
-//             'MTS Médico Dentaire',
-//             style: TextStyle(
-//               color: AppColors.bannerTitle,
-//               fontSize:
-//                   _isMobile
-//                       ? AppDimens.fontBannerTitleMobile
-//                       : AppDimens.fontBannerTitle,
-//               fontWeight: FontWeight.w900,
-//               letterSpacing: -1,
-//               height: 1.05,
-//             ),
-//             textAlign: TextAlign.center,
-//           ),
-//           const SizedBox(height: 16),
-//           Padding(
-//             padding: EdgeInsets.symmetric(horizontal: _isMobile ? 8 : 80),
-//             child: Text(
-//               'Un comptoir dentaire qui offre tout ce dont vous avez besoin '
-//               'pour votre cabinet dentaire.',
-//               textAlign: TextAlign.center,
-//               style: TextStyle(
-//                 color: AppColors.bannerDesc,
-//                 fontSize:
-//                     _isMobile
-//                         ? AppDimens.fontBannerDescMobile
-//                         : AppDimens.fontBannerDesc,
-//                 height: 1.7,
-//               ),
-//             ),
-//           ),
-//           const SizedBox(height: 28),
-//           _buildDiscoverButton(),
-//         ],
-//       ),
-//     );
-//   }
-
-//   Widget _buildDiscoverButton() {
-//     return OutlinedButton.icon(
-//       onPressed: () => Navigator.pushNamed(context, AppRoutes.boutique),
-//       icon: Container(
-//         width: 22,
-//         height: 22,
-//         decoration: BoxDecoration(
-//           color: Colors.white24,
-//           borderRadius: BorderRadius.circular(11),
-//         ),
-//         child: const Icon(Icons.arrow_forward, color: Colors.white, size: 13),
-//       ),
-//       label: Text(
-//         'Nos Produits',
-//         style: TextStyle(
-//           color: AppColors.bannerTitle,
-//           fontSize:
-//               _isMobile
-//                   ? AppDimens.btnDiscoverFontMobile
-//                   : AppDimens.btnDiscoverFontSize,
-//           fontWeight: FontWeight.w700,
-//           letterSpacing: 1,
-//         ),
-//       ),
-//       style: OutlinedButton.styleFrom(
-//         side: const BorderSide(color: AppColors.bannerBtnBorder, width: 1.5),
-//         padding: EdgeInsets.symmetric(
-//           horizontal:
-//               _isMobile
-//                   ? AppDimens.btnDiscoverPadHMobile
-//                   : AppDimens.btnDiscoverPadH,
-//           vertical:
-//               _isMobile
-//                   ? AppDimens.btnDiscoverPadVMobile
-//                   : AppDimens.btnDiscoverPadV,
-//         ),
-//         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-//       ),
-//     );
-//   }
-
-//   // ──────────────────────────────────────────────────────────────
-//   // INFO BAR (bas du banner)
-//   // ──────────────────────────────────────────────────────────────
-
-//   Widget _buildInfoBar() {
-//     final cards = [
-//       _InfoCardData(
-//         icon: Icons.phone_outlined,
-//         title: 'Appelez-nous',
-//         text: '07 82 58 00 55',
-//       ),
-//       _InfoCardData(
-//         icon: Icons.mail_outline,
-//         title: 'Écrivez-nous',
-//         text: 'mtsmedicodentaire@gmail.com',
-//       ),
-//       _InfoCardData(
-//         icon: Icons.calendar_today_outlined,
-//         title: 'Disponibilité',
-//         text: 'Disponible 7j / 7',
-//       ),
-//       _InfoCardData(
-//         icon: Icons.access_time_outlined,
-//         title: 'Service continu',
-//         text: '24 Heures / 24',
-//       ),
-//     ];
-
-//     if (_isMobile) {
-//       return Column(
-//         children:
-//             cards
-//                 .map(
-//                   (c) => InfoCard(
-//                     icon: c.icon,
-//                     title: c.title,
-//                     text: c.text,
-//                     isMobile: true,
-//                   ),
-//                 )
-//                 .toList(),
-//       );
-//     }
-
-//     return Row(
-//       children:
-//           cards
-//               .map(
-//                 (c) => Expanded(
-//                   child: InfoCard(
-//                     icon: c.icon,
-//                     title: c.title,
-//                     text: c.text,
-//                     isMobile: false,
-//                   ),
-//                 ),
-//               )
-//               .toList(),
-//     );
-//   }
-// }
-
-// // ── Data class locale pour les info cards ────────────────────────────────────
-// class _InfoCardData {
-//   final IconData icon;
-//   final String title;
-//   final String text;
-//   const _InfoCardData({
-//     required this.icon,
-//     required this.title,
-//     required this.text,
-//   });
-// }
-
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../style/constants/app_colors.dart';
 import '../../style/constants/app_dimens.dart';
 import '../../style/constants/app_routes.dart';
@@ -515,6 +8,7 @@ import '../../widgets/app_search_bar.dart';
 import '../../widgets/info_card.dart';
 import '../../widgets/login_link.dart';
 import '../../widgets/nav_item.dart';
+import '../../widgets/prouitsCart.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -526,8 +20,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-
-  // Clé globale pour scroller vers la section produits
   final GlobalKey _productsSectionKey = GlobalKey();
 
   bool _menuOpen = false;
@@ -539,14 +31,12 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  // ── Helpers responsive ────────────────────────────────────────
   bool get _isMobile =>
       MediaQuery.of(context).size.width < AppDimens.mobileBreak;
   bool get _isTablet =>
       MediaQuery.of(context).size.width >= AppDimens.mobileBreak &&
       MediaQuery.of(context).size.width < AppDimens.tabletBreak;
 
-  /// Scroll fluide vers la section produits
   void _scrollToProducts() {
     final ctx = _productsSectionKey.currentContext;
     if (ctx != null) {
@@ -565,13 +55,8 @@ class _HomePageState extends State<HomePage> {
         controller: _scrollController,
         child: Column(
           children: [
-            // ── 1. SECTION BANNER (photo + overlay + navbar + hero + infobar) ──
             _buildBannerSection(),
-
-            // ── 2. SECTION PRODUITS ───────────────────────────────────────────
             _buildProductsSection(),
-
-            // ── 3. FOOTER ─────────────────────────────────────────────────────
             _buildFooter(),
           ],
         ),
@@ -842,7 +327,7 @@ class _HomePageState extends State<HomePage> {
             child: const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Text(
-                "Se connecter /",
+                "Se connecter",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: AppDimens.fontConnexion,
@@ -862,7 +347,7 @@ class _HomePageState extends State<HomePage> {
             child: const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Text(
-                " S'inscrire",
+                "S'inscrire",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: AppDimens.fontConnexion,
@@ -951,7 +436,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(height: 28),
-          // Bouton → scroll vers section produits
           OutlinedButton.icon(
             onPressed: _scrollToProducts,
             icon: Container(
@@ -1061,12 +545,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ════════════════════════════════════════════════════════════════
-  // 2. SECTION PRODUITS
+  // 2. SECTION PRODUITS — Firestore
   // ════════════════════════════════════════════════════════════════
 
   Widget _buildProductsSection() {
+    final bool isLoggedIn = FirebaseAuth.instance.currentUser != null;
+
     return Container(
-      key: _productsSectionKey, // ← ancre pour le scroll
+      key: _productsSectionKey,
       color: const Color(0xFFF8FAFF),
       padding: EdgeInsets.symmetric(
         horizontal: _isMobile ? 16 : 48,
@@ -1075,7 +561,7 @@ class _HomePageState extends State<HomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── En-tête section ─────────────────────────────────
+          // ── Tous les produits ────────────────────────────
           _buildSectionHeader(
             eyebrow: 'CATALOGUE',
             title: 'Nos Produits',
@@ -1083,35 +569,151 @@ class _HomePageState extends State<HomePage> {
                 'Découvrez notre sélection de matériel médico-dentaire professionnel.',
           ),
           const SizedBox(height: 32),
-
-          // ── Placeholder "pas de produits" ────────────────────
-          //_buildEmptyProducts(),
+          _buildProductGrid(
+            stream:
+                FirebaseFirestore.instance
+                    .collection('produits')
+                    .orderBy('nom')
+                    .snapshots(),
+            isLoggedIn: isLoggedIn,
+          ),
           const SizedBox(height: 56),
 
-          // ── En-tête meilleures ventes ────────────────────────
+          // ── Meilleures ventes ────────────────────────────
           _buildSectionHeader(
             eyebrow: 'TOP VENTES',
             title: 'Meilleures ventes',
             desc: 'Les produits les plus commandés par nos praticiens.',
           ),
-          const SizedBox(height: 32),
 
-          //_buildEmptyProducts(),
           const SizedBox(height: 56),
 
-          // ── En-tête mieux notés ──────────────────────────────
+          // ── Mieux notés ──────────────────────────────────
           _buildSectionHeader(
             eyebrow: 'TOP AVIS',
             title: 'Mieux notés',
             desc: 'Sélectionnés selon les évaluations de nos clients.',
             accentColor: const Color(0xFFF59E0B),
           ),
-          const SizedBox(height: 32),
-          //_buildEmptyProducts(accentColor: const Color(0xFFF59E0B)),
         ],
       ),
     );
   }
+
+  /// StreamBuilder + GridView responsive
+  Widget _buildProductGrid({
+    required Stream<QuerySnapshot> stream,
+    required bool isLoggedIn,
+    Color accentColor = AppColors.primary,
+  }) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: stream,
+      builder: (context, snapshot) {
+        // Chargement
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 48),
+              child: CircularProgressIndicator(color: accentColor),
+            ),
+          );
+        }
+
+        // Erreur
+        if (snapshot.hasError) {
+          return _buildGridMessage(
+            icon: Icons.error_outline,
+            message: 'Une erreur est survenue. Réessayez plus tard.',
+            color: Colors.redAccent,
+          );
+        }
+
+        // Liste vide
+        final docs = snapshot.data?.docs ?? [];
+        if (docs.isEmpty) {
+          return _buildGridMessage(
+            icon: Icons.inventory_2_outlined,
+            message: 'Aucun produit disponible pour le moment.',
+            color: accentColor,
+          );
+        }
+
+        // Grille responsive
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            int columns;
+            if (constraints.maxWidth >= 1100) {
+              columns = 4;
+            } else if (constraints.maxWidth >= 720) {
+              columns = 3;
+            } else if (constraints.maxWidth >= 480) {
+              columns = 2;
+            } else {
+              columns = 1;
+            }
+
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: columns,
+                mainAxisSpacing: 20,
+                crossAxisSpacing: 20,
+                childAspectRatio: 0.72,
+              ),
+              itemCount: docs.length,
+              itemBuilder: (context, index) {
+                final data = docs[index].data() as Map<String, dynamic>;
+                return ProductCard(
+                  id: docs[index].id,
+                  nom: data['nom'] ?? 'Sans nom',
+                  categorie: data['categorie'] ?? '—',
+                  description: data['description'] ?? '',
+                  marque: data['marque'] ?? '—',
+                  prix: (data['prix'] as num?)?.toDouble() ?? 0.0,
+                  isLoggedIn: isLoggedIn,
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildGridMessage({
+    required IconData icon,
+    required String message,
+    required Color color,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.15)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 48, color: color.withOpacity(0.5)),
+          const SizedBox(height: 14),
+          Text(
+            message,
+            style: TextStyle(
+              fontSize: 14,
+              color: color.withOpacity(0.7),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // SECTION HEADER
+  // ──────────────────────────────────────────────────────────────
 
   Widget _buildSectionHeader({
     required String eyebrow,
@@ -1178,7 +780,6 @@ class _HomePageState extends State<HomePage> {
       ),
       child: Column(
         children: [
-          // ── Grille footer ────────────────────────────────────
           _isMobile
               ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1235,13 +836,9 @@ class _HomePageState extends State<HomePage> {
                   Expanded(flex: 3, child: _buildFooterContact()),
                 ],
               ),
-
-          // ── Ligne de séparation ───────────────────────────────
           const SizedBox(height: 36),
           Container(height: 1, color: AppColors.footerBorder),
           const SizedBox(height: 20),
-
-          // ── Copyright ─────────────────────────────────────────
           _isMobile
               ? const Text(
                 '© 2025 MTS Médico-Dentaire — Tous droits réservés',
@@ -1254,26 +851,6 @@ class _HomePageState extends State<HomePage> {
                   const Text(
                     '© 2025 MTS Médico-Dentaire — Tous droits réservés',
                     style: TextStyle(fontSize: 12, color: Color(0xFF334155)),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: AppColors.primary.withOpacity(0.2),
-                      ),
-                    ),
-                    child: const Text(
-                      'Flutter + Firebase',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.footerAccent,
-                      ),
-                    ),
                   ),
                 ],
               ),
