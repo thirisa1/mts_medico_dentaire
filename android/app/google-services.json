@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "131930851035",
+    "project_id": "mts-web-92af8",
+    "storage_bucket": "mts-web-92af8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:131930851035:android:085a5cc68c08d129fbeefe",
+        "android_client_info": {
+          "package_name": "com.example.mts_medico_dentaire"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGsoAKctpBXRB2qiplH9vSs1NjOt19Iok"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
