@@ -59,7 +59,4 @@ class Order {
 // Données fictives
 // ─────────────────────────────────────────────
 const List<Order> kSampleOrders = [
-  Order(id: 'CMD-001', clientName: 'Jean Dupont',    date: '31/03/2026', amount: 250,  status: OrderStatus.enAttente),
-  Order(id: 'CMD-004', clientName: 'Sophie Laurent', date: '30/03/2026', amount: 95,   status: OrderStatus.livree),
-  Order(id: 'CMD-005', clientName: 'Lucas Bernard',  date: '29/03/2026', amount: 410,  status: OrderStatus.enAttente),
 ];

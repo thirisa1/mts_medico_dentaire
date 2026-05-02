@@ -15,6 +15,8 @@ class AppRoutes {
   static const String contact         = '/contact';
   static const String cgv             = '/cgv';
   static const String cgu             = '/cgu';
+  static const String checkout = '/checkout';
+  static const String acheteurHome = '/acheteur';
 
   // Vendeur
   static const String sellerDashboard = '/seller/dashboard';

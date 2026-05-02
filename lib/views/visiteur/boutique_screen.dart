@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../style/constants/app_colors.dart';
 import '../../style/constants/app_dimens.dart';
 import '../../style/constants/app_routes.dart';
+import '../../widgets/cart_icon_widget.dart';
 import '../../widgets/nav_item.dart';
 import '../../widgets/app_search_bar.dart';
 import '../../widgets/login_link.dart';
@@ -54,7 +55,19 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
   @override
   void initState() {
     super.initState();
-    _loadProducts();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // 1. Charger d'abord les produits
+      await _loadProducts();
+
+      // 2. Ensuite appliquer la query si elle existe
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (args?['query'] != null) {
+        final q = args!['query'] as String;
+        _searchController.text = q;
+        _onSearch(q);
+      }
+    });
   }
 
   @override
@@ -69,17 +82,41 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
   // CHARGEMENT FIRESTORE
   // ════════════════════════════════════════════════════════════════
 
+  // Future<void> _loadProducts() async {
+  //   setState(() => _loading = true);
+  //   try {
+  //     final snap =
+  //         await FirebaseFirestore.instance
+  //             .collection('produits')
+  //             .orderBy('nom')
+  //             .get();
+
+  //     final cats = <String>{};
+  //     for (final doc in snap.docs) {
+  //       final cat = (doc.data()['categorie'] as String?) ?? '';
+  //       if (cat.isNotEmpty) cats.add(cat);
+  //     }
+
+  //     setState(() {
+  //       _allDocs = snap.docs;
+  //       _categories = cats.toList()..sort();
+  //       _loading = false;
+  //     });
+  //     _applyFilters();
+  //   } catch (e) {
+  //     setState(() => _loading = false);
+  //   }
+  // }
+
   Future<void> _loadProducts() async {
     setState(() => _loading = true);
     try {
       final snap =
           await FirebaseFirestore.instance
               .collection('produits')
-              .where('deleted', isNotEqualTo: true)
-              .orderBy('deleted')
               .orderBy('nom')
               .get();
-              
+
       final cats = <String>{};
       for (final doc in snap.docs) {
         final cat = (doc.data()['categorie'] as String?) ?? '';
@@ -91,7 +128,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
         _categories = cats.toList()..sort();
         _loading = false;
       });
-      _applyFilters();
+
+      _applyFilters(); // ← garde-le ici pour le rechargement manuel
     } catch (e) {
       setState(() => _loading = false);
     }
@@ -267,11 +305,19 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
               onSubmitted: _onSearch,
             ),
             const SizedBox(width: 14),
+            const CartIconWidget(),
+            const SizedBox(width: 8),
             LoginLink(
               onLogin: () => Navigator.pushNamed(context, AppRoutes.login),
               onRegister:
                   () => Navigator.pushNamed(context, AppRoutes.register),
             ),
+            // const SizedBox(width: 14),
+            // LoginLink(
+            //   onLogin: () => Navigator.pushNamed(context, AppRoutes.login),
+            //   onRegister:
+            //       () => Navigator.pushNamed(context, AppRoutes.register),
+            // ),
           ],
           if (_isMobile)
             Builder(
@@ -538,7 +584,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
             controller: _searchController,
             onSubmitted: _onSearch,
             onChanged: (v) {
-              if (v.isEmpty) _onSearch('');
+              //if (v.isEmpty) _onSearch('');
+              _onSearch(v);
             },
             decoration: InputDecoration(
               hintText: 'Rechercher...',
@@ -641,7 +688,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
         controller: _searchController,
         onSubmitted: _onSearch,
         onChanged: (v) {
-          if (v.isEmpty) _onSearch('');
+          // if (v.isEmpty) _onSearch('');
+          _onSearch(v);
         },
         decoration: InputDecoration(
           hintText: 'Recherche...',
@@ -977,8 +1025,19 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
           description: data['descreption'] ?? '',
           marque: data['marque'] ?? '—',
           prix: (data['prix'] as num?)?.toDouble() ?? 0.0,
+          imgProd: data['imgProd'] as String?,
+          quantite: (data['quantite'] as num?)?.toInt() ?? 0,
           isLoggedIn: _isLoggedIn,
         ),
+        // ProductCard(
+        //   id: doc.id,
+        //   nom: data['nom'] ?? 'Sans nom',
+        //   categorie: data['categorie'] ?? '—',
+        //   description: data['descreption'] ?? '',
+        //   marque: data['marque'] ?? '—',
+        //   prix: (data['prix'] as num?)?.toDouble() ?? 0.0,
+        //   isLoggedIn: _isLoggedIn,
+        // ),
         // Badge épuisé
         if (quantite == 0)
           Positioned(

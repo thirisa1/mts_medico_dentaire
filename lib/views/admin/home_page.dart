@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../model/order.dart';
+import '../../services/order_service.dart';
+import '../../services/notification_service.dart';
 import '../../style/theme/colors.dart';
+import '../../widgets/notification_bell_widget.dart';
 import 'accounts_page.dart';
 import 'products_page.dart';
 import 'settings_panel.dart';
-import '../../widgets/order_card.dart';
-import '../../widgets/status_chip.dart';
 
 // ─────────────────────────────────────────────
 // HomePage Admin — MTS Médico-Dentaire
@@ -51,13 +51,12 @@ class _HomePageState extends State<HomePageAdmin>
     final isMobile = MediaQuery.of(context).size.width < 768;
 
     if (isMobile) {
-      // Version mobile avec BottomNavigationBar
       return Scaffold(
         backgroundColor: AppColors.background,
         body: IndexedStack(
           index: _currentIndex,
           children: [
-            const _HomeTab(),
+            const HomeTab(),
             const AccountsPage(),
             const ProductsPage(),
             const _DashboardTab(),
@@ -67,7 +66,6 @@ class _HomePageState extends State<HomePageAdmin>
         bottomNavigationBar: _buildBottomNav(),
       );
     } else {
-      // Version web avec Sidebar
       return Scaffold(
         backgroundColor: AppColors.background,
         body: Row(
@@ -77,7 +75,7 @@ class _HomePageState extends State<HomePageAdmin>
               child: IndexedStack(
                 index: _currentIndex,
                 children: [
-                  const _HomeTab(),
+                  const HomeTab(),
                   const AccountsPage(),
                   const ProductsPage(),
                   const _DashboardTab(),
@@ -91,7 +89,6 @@ class _HomePageState extends State<HomePageAdmin>
     }
   }
 
-  // ── Sidebar Web ──
   Widget _buildSidebar() {
     return Container(
       width: 280,
@@ -110,25 +107,51 @@ class _HomePageState extends State<HomePageAdmin>
           Container(
             padding: const EdgeInsets.all(20),
             decoration: const BoxDecoration(gradient: AppColors.appBarGradient),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  'MTS',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 2,
-                  ),
+                const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'MTS',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Médico-Dentaire',
+                      style: TextStyle(color: Color(0xAAFFFFFF), fontSize: 12),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 4),
-                Text(
-                  'Médico-Dentaire',
-                  style: TextStyle(color: Color(0xAAFFFFFF), fontSize: 12),
-                ),
+                const Spacer(),
+                // ← CLOCHE ICI
+                const NotificationBellWidget(),
               ],
             ),
+            // child: const Column(
+            //   crossAxisAlignment: CrossAxisAlignment.start,
+            //   children: [
+            //     Text(
+            //       'MTS',
+            //       style: TextStyle(
+            //         color: Colors.white,
+            //         fontSize: 24,
+            //         fontWeight: FontWeight.w800,
+            //         letterSpacing: 2,
+            //       ),
+            //     ),
+            //     SizedBox(height: 4),
+            //     Text(
+            //       'Médico-Dentaire',
+            //       style: TextStyle(color: Color(0xAAFFFFFF), fontSize: 12),
+            //     ),
+            //   ],
+            // ),
           ),
           Expanded(
             child: ListView(
@@ -167,7 +190,6 @@ class _HomePageState extends State<HomePageAdmin>
     );
   }
 
-  // ── Item Sidebar ──
   Widget _buildSidebarItem({
     required IconData icon,
     required String label,
@@ -186,7 +208,7 @@ class _HomePageState extends State<HomePageAdmin>
             decoration: BoxDecoration(
               color:
                   isActive
-                      ? AppColors.primary.withValues(alpha: 0.1)
+                      ? AppColors.primary.withOpacity(0.1)
                       : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               border:
@@ -220,7 +242,6 @@ class _HomePageState extends State<HomePageAdmin>
     );
   }
 
-  // ── Bottom Nav (Mobile) ──
   Widget _buildBottomNav() {
     return Container(
       decoration: BoxDecoration(
@@ -270,7 +291,6 @@ class _HomePageState extends State<HomePageAdmin>
     );
   }
 
-  // ── FAB (visible uniquement sur l'onglet Accueil, mobile) ──
   Widget _buildFAB() {
     return ScaleTransition(
       scale: _fabScale,
@@ -306,48 +326,278 @@ class _HomePageState extends State<HomePageAdmin>
 }
 
 // ─────────────────────────────────────────────
-// Onglet 0 — Accueil (contenu de l'ancienne HomePage)
+// Onglet Commandes
 // ─────────────────────────────────────────────
-class _HomeTab extends StatefulWidget {
-  const _HomeTab();
+class HomeTab extends StatefulWidget {
+  const HomeTab({super.key});
 
   @override
-  State<_HomeTab> createState() => _HomeTabState();
+  State<HomeTab> createState() => _HomeTabState();
 }
 
-class _HomeTabState extends State<_HomeTab> {
+class _HomeTabState extends State<HomeTab> {
   String _searchQuery = '';
+  String? _filterStatut;
 
-  List<Order> get _filteredOrders {
-    if (_searchQuery.isEmpty) return kSampleOrders;
-    return kSampleOrders.where((o) {
-      return o.id.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          o.clientName.toLowerCase().contains(_searchQuery.toLowerCase());
-    }).toList();
+  static const _statuts = ['en_attente', 'livree', 'annulee'];
+
+  String _statutLabel(String s) {
+    switch (s) {
+      case 'en_attente':
+        return 'En attente';
+      case 'livree':
+        return 'Livrée';
+      case 'annulee':
+        return 'Annulée';
+      default:
+        return s;
+    }
+  }
+
+  Color _statutColor(String s) {
+    switch (s) {
+      case 'en_attente':
+        return const Color(0xFFF59E0B);
+      case 'livree':
+        return const Color(0xFF059669);
+      case 'annulee':
+        return const Color(0xFFDC2626);
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  IconData _statutIcon(String s) {
+    switch (s) {
+      case 'en_attente':
+        return Icons.access_time_rounded;
+      case 'livree':
+        return Icons.done_all_rounded;
+      case 'annulee':
+        return Icons.cancel_outlined;
+      default:
+        return Icons.circle;
+    }
+  }
+
+  // ── Changement de statut + notification ──────
+  Future<void> _changeStatut(OrderModel order, String newStatut) async {
+    // Dialog de confirmation si passage à "livrée"
+    if (newStatut == 'livree') {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder:
+            (_) => AlertDialog(
+              backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF059669).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.local_shipping_outlined,
+                      color: Color(0xFF059669),
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Marquer comme livrée ?',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'La commande #${order.id.substring(0, 8).toUpperCase()} '
+                    'de ${order.clientName} sera marquée comme livrée.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFECFDF5),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.notifications_active_outlined,
+                          color: Color(0xFF059669),
+                          size: 16,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Le client recevra une notification automatiquement.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF059669),
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(
+                    'Annuler',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.pop(context, true),
+                  icon: const Icon(Icons.done_all_rounded, size: 16),
+                  label: const Text(
+                    'Confirmer',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF059669),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+      );
+      if (confirm != true) return;
+    }
+
+    // 1. Mettre à jour le statut dans Firestore
+    await OrderService.updateStatut(order.id, newStatut);
+
+    // 2. Si livrée → créer la notification pour le client
+    if (newStatut == 'livree') {
+      await NotificationService.createLivraisonNotification(
+        userId: order.userId,
+        orderId: order.id,
+        clientName: order.clientName,
+        total: order.total,
+        lignes:
+            order.lignes
+                .map(
+                  (l) => {'nom': l.nom, 'quantite': l.quantite, 'prix': l.prix},
+                )
+                .toList(),
+      );
+
+      // Snackbar de confirmation pour l'admin
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.notifications_active_outlined,
+                  color: Colors.white,
+                  size: 18,
+                ),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    '${order.clientName} a été notifié — livraison confirmée.',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF059669),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 768;
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      extendBodyBehindAppBar: true,
-      appBar: _buildAppBar(context),
-      body: Column(
-        children: [
-          const SizedBox(height: kToolbarHeight + 24),
-          _buildHeader(),
-          _buildSearchBar(),
-          const SizedBox(height: 8),
-          _buildStatusSummary(),
-          const SizedBox(height: 4),
-          Expanded(child: _buildOrderList()),
-        ],
+      appBar: isMobile ? _buildAppBar() : null,
+      body: StreamBuilder<List<OrderModel>>(
+        stream: OrderService.allOrdersStream(),
+        builder: (context, snap) {
+          final allOrders = snap.data ?? [];
+
+          final filtered =
+              allOrders.where((o) {
+                final matchSearch =
+                    _searchQuery.isEmpty ||
+                    o.id.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                    o.clientName.toLowerCase().contains(
+                      _searchQuery.toLowerCase(),
+                    ) ||
+                    o.ville.toLowerCase().contains(_searchQuery.toLowerCase());
+                final matchStatut =
+                    _filterStatut == null || o.statut == _filterStatut;
+                return matchSearch && matchStatut;
+              }).toList();
+
+          final enAttente =
+              allOrders.where((o) => o.statut == 'en_attente').length;
+          final livrees = allOrders.where((o) => o.statut == 'livree').length;
+
+          return Column(
+            children: [
+              if (!isMobile) _buildWebHeader(allOrders.length),
+              _buildSearchBar(),
+              _buildStatutFilter(enAttente, livrees),
+              const SizedBox(height: 4),
+              Expanded(
+                child:
+                    snap.connectionState == ConnectionState.waiting
+                        ? const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.primary,
+                          ),
+                        )
+                        : filtered.isEmpty
+                        ? _buildEmpty()
+                        : _buildOrderList(filtered),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  // ── AppBar ──
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
+  PreferredSizeWidget _buildAppBar() {
     return PreferredSize(
       preferredSize: const Size.fromHeight(kToolbarHeight),
       child: Container(
@@ -357,130 +607,67 @@ class _HomeTabState extends State<_HomeTab> {
             BoxShadow(
               color: AppColors.shadowDeep,
               blurRadius: 12,
-              offset: Offset(0, 4),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          leading: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.3),
-                  width: 1,
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.asset(
-                  '../../../images/logo1.png',
-                  fit: BoxFit.cover,
-                  errorBuilder:
-                      (_, __, ___) => const Center(
-                        child: Text(
-                          'MTS',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                ),
-              ),
-            ),
-          ),
-          title: Column(
+          title: const Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'MTS',
+              Text(
+                'Commandes',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                  letterSpacing: 2,
+                  fontSize: 17,
                 ),
               ),
               Text(
-                'Médico-Dentaire',
-                style: TextStyle(
-                  color: AppColors.accent.withValues(alpha: 0.9),
-                  fontWeight: FontWeight.w400,
-                  fontSize: 10,
-                  letterSpacing: 1.5,
-                ),
+                'MTS Médico-Dentaire',
+                style: TextStyle(color: Color(0xAAFFFFFF), fontSize: 10),
               ),
             ],
           ),
           centerTitle: true,
-          // actions: [
-          //   Padding(
-          //     padding: const EdgeInsets.only(right: 8),
-          //     child: IconButton(
-          //       icon: Container(
-          //         padding: const EdgeInsets.all(6),
-          //         decoration: BoxDecoration(
-          //           color: Colors.white.withValues(alpha: 0.15),
-          //           borderRadius: BorderRadius.circular(8),
-          //         ),
-          //         child: const Icon(
-          //           Icons.settings_outlined,
-          //           color: Colors.white,
-          //           size: 18,
-          //         ),
-          //       ),
-          //       onPressed: () => openSettingsPanel(context),
-          //     ),
-          //   ),
-          // ],
+          actions: const [NotificationBellWidget(), SizedBox(width: 8)],
         ),
       ),
     );
   }
 
-  // ── En-tête ──
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+  Widget _buildWebHeader(int total) {
+    return Container(
+      color: AppColors.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Bonjour, Admin 👋',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '${kSampleOrders.length} commandes',
+              const Text(
+                'Commandes',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black87,
                 ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '$total commandes au total',
+                style: TextStyle(color: AppColors.textHint, fontSize: 13),
               ),
             ],
           ),
+          const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               gradient: AppColors.cardAccent,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.shadowDeep,
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
             ),
             child: const Row(
               children: [
@@ -502,31 +689,9 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // ── Résumé statuts ──
-  Widget _buildStatusSummary() {
-    final counts = {
-      OrderStatus.enAttente:
-          kSampleOrders.where((o) => o.status == OrderStatus.enAttente).length,
-      OrderStatus.livree:
-          kSampleOrders.where((o) => o.status == OrderStatus.livree).length,
-    };
-    return SizedBox(
-      height: 44,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        scrollDirection: Axis.horizontal,
-        children:
-            counts.entries
-                .map((e) => StatusChip(status: e.key, count: e.value))
-                .toList(),
-      ),
-    );
-  }
-
-  // ── Barre de recherche ──
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -543,7 +708,7 @@ class _HomeTabState extends State<_HomeTab> {
           onChanged: (v) => setState(() => _searchQuery = v),
           style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
           decoration: InputDecoration(
-            hintText: 'Rechercher une commande...',
+            hintText: 'Rechercher par N°, client, ville...',
             hintStyle: TextStyle(color: AppColors.textHint, fontSize: 13),
             prefixIcon: const Icon(
               Icons.search_rounded,
@@ -577,35 +742,347 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // ── Liste des commandes ──
-  Widget _buildOrderList() {
-    if (_filteredOrders.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+  Widget _buildStatutFilter(int enAttente, int livrees) {
+    return SizedBox(
+      height: 44,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        scrollDirection: Axis.horizontal,
+        children: [
+          _filterChip(
+            label: 'Tous',
+            count: null,
+            selected: _filterStatut == null,
+            color: AppColors.primary,
+            onTap: () => setState(() => _filterStatut = null),
+          ),
+          const SizedBox(width: 8),
+          _filterChip(
+            label: 'En attente',
+            count: enAttente,
+            selected: _filterStatut == 'en_attente',
+            color: const Color(0xFFF59E0B),
+            onTap: () => setState(() => _filterStatut = 'en_attente'),
+          ),
+          const SizedBox(width: 8),
+          _filterChip(
+            label: 'Livrées',
+            count: livrees,
+            selected: _filterStatut == 'livree',
+            color: const Color(0xFF059669),
+            onTap: () => setState(() => _filterStatut = 'livree'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterChip({
+    required String label,
+    required int? count,
+    required bool selected,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? color : AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? color : AppColors.textHint.withOpacity(0.4),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
           children: [
-            Icon(Icons.search_off_rounded, size: 48, color: AppColors.textHint),
-            const SizedBox(height: 12),
             Text(
-              'Aucune commande trouvée',
-              style: TextStyle(color: AppColors.textMuted),
+              label,
+              style: TextStyle(
+                color: selected ? Colors.white : AppColors.textSecondary,
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+            if (count != null) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color:
+                      selected
+                          ? Colors.white.withOpacity(0.3)
+                          : color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$count',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: selected ? Colors.white : color,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderList(List<OrderModel> orders) {
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      itemCount: orders.length,
+      itemBuilder: (context, i) => _buildOrderCard(orders[i]),
+    );
+  }
+
+  Widget _buildOrderCard(OrderModel order) {
+    final color = _statutColor(order.statut);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(_statutIcon(order.statut), color: color, size: 22),
+        ),
+        title: Text(
+          '#${order.id.substring(0, 8).toUpperCase()}',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        subtitle: Text(
+          '${order.clientName} • ${order.ville}',
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              '${order.total.toStringAsFixed(0)} DA',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                _statutLabel(order.statut),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
             ),
           ],
         ),
-      );
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-      itemCount: _filteredOrders.length,
-      itemBuilder:
-          (context, index) =>
-              OrderCard(order: _filteredOrders[index], index: index),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Divider(),
+                const SizedBox(height: 8),
+                _infoRow(Icons.person_outline, order.clientName),
+                _infoRow(Icons.mail_outline, order.clientEmail),
+                _infoRow(Icons.phone_outlined, order.telephone),
+                _infoRow(
+                  Icons.location_on_outlined,
+                  '${order.adresse}, ${order.ville}, ${order.wilaya}',
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Produits :',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                ...order.lignes.map(
+                  (l) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.fiber_manual_record,
+                          size: 6,
+                          color: AppColors.accent,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            l.nom,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '×${l.quantite}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textHint,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${(l.prix * l.quantite).toStringAsFixed(0)} DA',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const Divider(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Total : ${order.total.toStringAsFixed(0)} DA',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Changer le statut :',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children:
+                      _statuts
+                          .where((s) => s != order.statut)
+                          .map(
+                            (s) => GestureDetector(
+                              // ← ICI : _changeStatut au lieu de OrderService.updateStatut
+                              onTap: () => _changeStatut(order, s),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _statutColor(s).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: _statutColor(s).withOpacity(0.4),
+                                  ),
+                                ),
+                                child: Text(
+                                  '→ ${_statutLabel(s)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: _statutColor(s),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: AppColors.accent),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.receipt_long_outlined,
+            size: 56,
+            color: AppColors.textHint,
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Aucune commande trouvée',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 15),
+          ),
+        ],
+      ),
     );
   }
 }
 
 // ─────────────────────────────────────────────
-// Onglet 3 — Tableau de bord (placeholder)
+// Onglet Tableau de bord
 // ─────────────────────────────────────────────
 class _DashboardTab extends StatelessWidget {
   const _DashboardTab();
@@ -623,7 +1100,7 @@ class _DashboardTab extends StatelessWidget {
               BoxShadow(
                 color: AppColors.shadowDeep,
                 blurRadius: 12,
-                offset: Offset(0, 4),
+                offset: const Offset(0, 4),
               ),
             ],
           ),

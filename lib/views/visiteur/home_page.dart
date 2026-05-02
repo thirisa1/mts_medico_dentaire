@@ -649,11 +649,25 @@ class _HomePageState extends State<HomePage> {
                   id: docs[index].id,
                   nom: data['nom'] ?? 'Sans nom',
                   categorie: data['categorie'] ?? '—',
-                  description: data['description'] ?? '',
+                  description:
+                      data['descreption'] ??
+                      '', // ← faute corrigée : descreption
                   marque: data['marque'] ?? '—',
                   prix: (data['prix'] as num?)?.toDouble() ?? 0.0,
+                  imgProd: data['imgProd'] as String?, // ← AJOUTÉ
+                  quantite:
+                      (data['quantite'] as num?)?.toInt() ?? 0, // ← AJOUTÉ
                   isLoggedIn: isLoggedIn,
                 );
+                // return ProductCard(
+                //   id: docs[index].id,
+                //   nom: data['nom'] ?? 'Sans nom',
+                //   categorie: data['categorie'] ?? '—',
+                //   description: data['description'] ?? '',
+                //   marque: data['marque'] ?? '—',
+                //   prix: (data['prix'] as num?)?.toDouble() ?? 0.0,
+                //   isLoggedIn: isLoggedIn,
+                // );
               },
             );
           },
