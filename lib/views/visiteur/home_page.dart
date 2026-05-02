@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/cabinet_service.dart';
 import '../../style/constants/app_colors.dart';
 import '../../style/constants/app_dimens.dart';
 import '../../style/constants/app_routes.dart';
@@ -50,17 +51,23 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SingleChildScrollView(
-        controller: _scrollController,
-        child: Column(
-          children: [
-            _buildBannerSection(),
-            _buildProductsSection(),
-            _buildFooter(),
-          ],
-        ),
-      ),
+    return StreamBuilder<CabinetInfo>(
+      stream: CabinetService.stream(),
+      builder: (context, snap) {
+        final info = snap.data ?? CabinetInfo.defaults();
+        return Scaffold(
+          body: SingleChildScrollView(
+            controller: _scrollController,
+            child: Column(
+              children: [
+                _buildBannerSection(info),
+                _buildProductsSection(),
+                _buildFooter(info),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -68,7 +75,7 @@ class _HomePageState extends State<HomePage> {
   // 1. SECTION BANNER
   // ════════════════════════════════════════════════════════════════
 
-  Widget _buildBannerSection() {
+  Widget _buildBannerSection(CabinetInfo info) {
     return SizedBox(
       height: MediaQuery.of(context).size.height,
       child: Stack(
@@ -82,7 +89,7 @@ class _HomePageState extends State<HomePage> {
               const Spacer(),
               _buildHeroText(),
               const Spacer(),
-              _buildInfoBar(),
+              _buildInfoBar(info), // ← passe info
             ],
           ),
         ],
@@ -228,7 +235,7 @@ class _HomePageState extends State<HomePage> {
         onTap: () => Navigator.pushNamed(context, AppRoutes.contact),
       ),
       NavItem(
-        title: 'CGU',
+        title: 'CGU/CGV',
         onTap: () => Navigator.pushNamed(context, AppRoutes.cgu),
       ),
     ];
@@ -314,7 +321,7 @@ class _HomePageState extends State<HomePage> {
             _closeMenu();
             Navigator.pushNamed(context, AppRoutes.contact);
           }),
-          _mobileNavItem(Icons.description_outlined, 'CGU', () {
+          _mobileNavItem(Icons.description_outlined, 'CGU/CGV', () {
             _closeMenu();
             Navigator.pushNamed(context, AppRoutes.cgu);
           }),
@@ -492,23 +499,15 @@ class _HomePageState extends State<HomePage> {
   // INFO BAR
   // ──────────────────────────────────────────────────────────────
 
-  Widget _buildInfoBar() {
+  Widget _buildInfoBar(CabinetInfo info) {
     final cards = [
-      _InfoCardData(Icons.phone_outlined, 'Appelez-nous', '07 82 58 00 55'),
-      _InfoCardData(
-        Icons.mail_outline,
-        'Écrivez-nous',
-        'mtsmedicodentaire@gmail.com',
-      ),
-      _InfoCardData(
-        Icons.calendar_today_outlined,
-        'Disponibilité',
-        'Disponible 7j / 7',
-      ),
+      _InfoCardData(Icons.phone_outlined, 'Appelez-nous', info.phone),
+      _InfoCardData(Icons.mail_outline, 'Écrivez-nous', info.email),
+      _InfoCardData(Icons.calendar_today_outlined, 'Lieu', info.address),
       _InfoCardData(
         Icons.access_time_outlined,
         'Service continu',
-        '24 Heures / 24',
+        '24 Heures / 7j',
       ),
     ];
 
@@ -576,24 +575,6 @@ class _HomePageState extends State<HomePage> {
                     .orderBy('nom')
                     .snapshots(),
             isLoggedIn: isLoggedIn,
-          ),
-          const SizedBox(height: 56),
-
-          // ── Meilleures ventes ────────────────────────────
-          _buildSectionHeader(
-            eyebrow: 'TOP VENTES',
-            title: 'Meilleures ventes',
-            desc: 'Les produits les plus commandés par nos praticiens.',
-          ),
-
-          const SizedBox(height: 56),
-
-          // ── Mieux notés ──────────────────────────────────
-          _buildSectionHeader(
-            eyebrow: 'TOP AVIS',
-            title: 'Mieux notés',
-            desc: 'Sélectionnés selon les évaluations de nos clients.',
-            accentColor: const Color(0xFFF59E0B),
           ),
         ],
       ),
@@ -769,7 +750,7 @@ class _HomePageState extends State<HomePage> {
   // 3. FOOTER
   // ════════════════════════════════════════════════════════════════
 
-  Widget _buildFooter() {
+  Widget _buildFooter(CabinetInfo info) {
     return Container(
       color: AppColors.footerBg,
       padding: EdgeInsets.fromLTRB(
@@ -786,7 +767,7 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   _buildFooterBrand(),
                   const SizedBox(height: 32),
-                  _buildFooterContact(),
+                  _buildFooterContact(info),
                   const SizedBox(height: 32),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -833,7 +814,7 @@ class _HomePageState extends State<HomePage> {
                     ]),
                   ),
                   const SizedBox(width: 24),
-                  Expanded(flex: 3, child: _buildFooterContact()),
+                  Expanded(flex: 3, child: _buildFooterContact(info)),
                 ],
               ),
           const SizedBox(height: 36),
@@ -930,10 +911,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildFooterContact() {
+  Widget _buildFooterContact(CabinetInfo info) {
     final items = [
-      _ContactItem(Icons.phone_outlined, '07 82 58 00 55'),
-      _ContactItem(Icons.mail_outline, 'mtsmedicodentaire@gmail.com'),
+      _ContactItem(Icons.phone_outlined, info.phone),
+      _ContactItem(Icons.mail_outline, info.email),
+      _ContactItem(Icons.location_on_outlined, info.address),
       _ContactItem(Icons.access_time_outlined, 'Disponible 24h / 7j'),
     ];
     return Column(

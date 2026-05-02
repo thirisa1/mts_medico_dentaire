@@ -1,11 +1,14 @@
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../style/constants/app_colors.dart';
 import '../../style/constants/app_dimens.dart';
 import '../../style/constants/app_routes.dart';
 import '../../utils/app_validators.dart';
+import '../../services/auth_service.dart';
 
 /// Page d'inscription — MTS Médico Dentaire
-/// Types de compte : Professionnel (justificatif requis) | Autre
+/// Branché sur Firebase Auth + Firestore + Cloudinary
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -28,11 +31,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _loading = false;
   String? _errorMessage;
 
-  // Type de compte : 'professionnel' | 'autre'
   String _accountType = 'professionnel';
 
-  // Justificatif (fichier simulé — remplacer par file_picker)
-  String? _justificatifName;
+  // Justificatif PDF
+  Uint8List? _pdfBytes;
+  String? _pdfFileName;
   bool _justificatifError = false;
 
   bool get _isMobile =>
@@ -50,38 +53,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  // ── Sélection du justificatif ─────────────────────────────────
+  // ── Sélection du PDF ──────────────────────────────────────────
   Future<void> _pickFile() async {
-    // TODO: intégrer file_picker
-    // FilePickerResult? result = await FilePicker.platform.pickFiles(
-    //   type: FileType.custom,
-    //   allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-    // );
-    // if (result != null) {
-    //   setState(() {
-    //     _justificatifName = result.files.single.name;
-    //     _justificatifError = false;
-    //   });
-    // }
-
-    // Simulation :
-    setState(() {
-      _justificatifName = 'justificatif_professionnel.pdf';
-      _justificatifError = false;
-    });
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      withData: true, // important pour Flutter Web
+    );
+    if (result != null && result.files.single.bytes != null) {
+      setState(() {
+        _pdfBytes = result.files.single.bytes;
+        _pdfFileName = result.files.single.name;
+        _justificatifError = false;
+      });
+    }
   }
 
-  void _removeFile() => setState(() => _justificatifName = null);
+  void _removeFile() => setState(() {
+    _pdfBytes = null;
+    _pdfFileName = null;
+  });
 
   // ── Soumission ────────────────────────────────────────────────
   Future<void> _register() async {
-    // Vérifier le justificatif pour les pros avant la validation du form
-    if (_isPro && _justificatifName == null) {
+    // Vérifier le justificatif avant la validation du form
+    if (_isPro && _pdfBytes == null) {
       setState(() => _justificatifError = true);
     }
 
     final formValid = _formKey.currentState!.validate();
-    final fileValid = !_isPro || _justificatifName != null;
+    final fileValid = !_isPro || _pdfBytes != null;
 
     if (!formValid || !fileValid) return;
 
@@ -98,46 +99,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      // ── TODO: Firebase Auth ──────────────────────────────────
-      // final credential = await FirebaseAuth.instance
-      //     .createUserWithEmailAndPassword(
-      //   email: _emailController.text.trim(),
-      //   password: _passwordController.text,
-      // );
-      // await FirebaseFirestore.instance
-      //     .collection('users')
-      //     .doc(credential.user!.uid)
-      //     .set({
-      //   'firstName': _firstNameController.text.trim(),
-      //   'lastName': _lastNameController.text.trim(),
-      //   'email': _emailController.text.trim(),
-      //   'phone': _phoneController.text.trim(),
-      //   'accountType': _accountType,
-      //   'role': 'client',
-      //   'justificatifUploaded': _isPro,
-      //   'verified': false, // admin doit valider le justificatif
-      //   'createdAt': FieldValue.serverTimestamp(),
-      // });
-      // ─────────────────────────────────────────────────────────
+      await AuthService.instance.register(
+        nom: _lastNameController.text,
+        prenom: _firstNameController.text,
+        email: _emailController.text,
+        telephone: _phoneController.text,
+        password: _passwordController.text,
+        role: _accountType,
+        pdfBytes: _pdfBytes,
+        pdfFileName: _pdfFileName,
+      );
 
-      await Future.delayed(const Duration(seconds: 2));
       if (mounted) _showSuccessDialog();
     } catch (e) {
-      setState(() => _errorMessage = _mapFirebaseError(e.toString()));
+      setState(() => _errorMessage = AuthService.translateError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
-  }
-
-  String _mapFirebaseError(String error) {
-    if (error.contains('email-already-in-use'))
-      return 'Un compte existe déjà avec cet email.';
-    if (error.contains('invalid-email')) return 'Adresse email invalide.';
-    if (error.contains('weak-password'))
-      return 'Mot de passe trop faible (min. 8 caractères).';
-    if (error.contains('network-request-failed'))
-      return 'Erreur réseau. Vérifiez votre connexion.';
-    return 'Une erreur est survenue. Réessayez.';
   }
 
   void _showSuccessDialog() {
@@ -178,7 +156,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 10),
                 Text(
                   _isPro
-                      ? 'Votre compte professionnel a été créé. Un administrateur vérifiera votre justificatif avant activation.'
+                      ? 'Votre compte professionnel a été créé. Un administrateur vérifiera votre justificatif avant activation complète.'
                       : 'Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
@@ -245,7 +223,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       _buildAccountTypeSelector(),
                       const SizedBox(height: 28),
                       _buildForm(),
-                      // Justificatif uniquement pour pro
                       if (_isPro) ...[
                         const SizedBox(height: 20),
                         _buildJustificatifUploader(),
@@ -308,11 +285,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Logo image ──────────────────────────────────
                 _buildPanelLogo(),
-
                 const Spacer(),
-
                 const Text(
                   'Rejoignez\nnotre réseau',
                   style: TextStyle(
@@ -333,11 +307,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-
                 _buildStep(
                   1,
                   'Choisissez votre profil',
-                  'Professionnel ou particulier',
+                  'Professionnel ou autre',
                 ),
                 _buildStep(
                   2,
@@ -349,7 +322,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   'Accédez au catalogue',
                   'Commandez en quelques clics',
                 ),
-
                 const Spacer(),
                 const Text(
                   '© 2025 MTS Médico-Dentaire',
@@ -366,7 +338,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildPanelLogo() {
     return Row(
       children: [
-        // Logo image avec fallback
         Image.asset(
           'images/logo1.png',
           height: 44,
@@ -424,126 +395,116 @@ class _RegisterScreenState extends State<RegisterScreen> {
     decoration: BoxDecoration(shape: BoxShape.circle, color: color),
   );
 
-  Widget _buildStep(int number, String title, String subtitle) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.3),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColors.primary.withOpacity(0.5),
-                width: 1,
-              ),
+  Widget _buildStep(int n, String title, String sub) => Padding(
+    padding: const EdgeInsets.only(bottom: 16),
+    child: Row(
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.3),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.5),
+              width: 1,
             ),
-            child: Center(
-              child: Text(
-                '$number',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
+          ),
+          child: Center(
+            child: Text(
+              '$n',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
               ),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: AppColors.bannerDesc,
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+            ),
+            Text(
+              sub,
+              style: const TextStyle(color: AppColors.bannerDesc, fontSize: 11),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
 
   // ──────────────────────────────────────────────────────────────
   // HEADER FORMULAIRE
   // ──────────────────────────────────────────────────────────────
 
-  Widget _buildTopBar() {
-    return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, AppRoutes.home),
-      child: const MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.arrow_back_ios_new, size: 14, color: AppColors.primary),
-            SizedBox(width: 4),
-            Text(
-              'Retour à l\'accueil',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-              ),
+  Widget _buildTopBar() => GestureDetector(
+    onTap: () => Navigator.pushNamed(context, AppRoutes.home),
+    child: const MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.arrow_back_ios_new, size: 14, color: AppColors.primary),
+          SizedBox(width: 4),
+          Text(
+            'Retour à l\'accueil',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
             ),
-          ],
+          ),
+        ],
+      ),
+    ),
+  );
+
+  Widget _buildFormHeader() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: const Icon(
+          Icons.person_add_outlined,
+          color: AppColors.primary,
+          size: 24,
         ),
       ),
-    );
-  }
-
-  Widget _buildFormHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Container(
-        //   width: 48,
-        //   height: 48,
-        //   decoration: BoxDecoration(
-        //     color: AppColors.primary.withOpacity(0.1),
-        //     borderRadius: BorderRadius.circular(14),
-        //   ),
-        //   // child: const Icon(Icons.person_add_outlined,
-        //   //     color: AppColors.primary, size: 24),
-        // ),
-        const SizedBox(height: 16),
-        const Text(
-          'Créer un compte',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w900,
-            color: AppColors.primaryDark,
-            letterSpacing: -0.3,
-          ),
+      const SizedBox(height: 16),
+      const Text(
+        'Créer un compte',
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w900,
+          color: AppColors.primaryDark,
+          letterSpacing: -0.3,
         ),
-        const SizedBox(height: 6),
-        const Text(
-          'Remplissez le formulaire pour rejoindre MTS.',
-          style: TextStyle(
-            fontSize: 13,
-            color: AppColors.textMuted,
-            height: 1.5,
-          ),
-        ),
-      ],
-    );
-  }
+      ),
+      const SizedBox(height: 6),
+      const Text(
+        'Remplissez le formulaire pour rejoindre MTS.',
+        style: TextStyle(fontSize: 13, color: AppColors.textMuted, height: 1.5),
+      ),
+    ],
+  );
 
   // ──────────────────────────────────────────────────────────────
-  // SÉLECTEUR TYPE DE COMPTE
+  // TYPE DE COMPTE
   // ──────────────────────────────────────────────────────────────
 
   Widget _buildAccountTypeSelector() {
@@ -602,9 +563,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       onTap:
           () => setState(() {
             _accountType = type;
-            // Réinitialiser justificatif si on bascule sur "autre"
             if (type == 'autre') {
-              _justificatifName = null;
+              _pdfBytes = null;
+              _pdfFileName = null;
               _justificatifError = false;
             }
           }),
@@ -764,7 +725,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ],
               ),
-
           const SizedBox(height: 16),
 
           // Email + Téléphone
@@ -815,7 +775,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ],
               ),
-
           const SizedBox(height: 16),
 
           // Mot de passe
@@ -825,7 +784,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             hint: '••••••••',
             icon: Icons.lock_outline,
             obscureText: _obscurePassword,
-            helperText: 'Min. 8 caractères, avec lettres et chiffres.',
+            helperText: 'Min. 8 caractères avec lettres et chiffres.',
             suffixIcon: IconButton(
               icon: Icon(
                 _obscurePassword
@@ -839,10 +798,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             validator: AppValidators.password,
           ),
-
           const SizedBox(height: 16),
 
-          // Confirmer mot de passe
+          // Confirmer
           _buildField(
             controller: _confirmController,
             label: 'Confirmer le mot de passe',
@@ -950,7 +908,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   // ──────────────────────────────────────────────────────────────
-  // JUSTIFICATIF (pro uniquement)
+  // JUSTIFICATIF
   // ──────────────────────────────────────────────────────────────
 
   Widget _buildJustificatifUploader() {
@@ -997,8 +955,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         const SizedBox(height: 10),
 
-        // Zone de dépôt
-        _justificatifName == null
+        _pdfFileName == null
             ? GestureDetector(
               onTap: _pickFile,
               child: MouseRegion(
@@ -1046,7 +1003,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 4),
                       const Text(
-                        'ou glissez-déposez ici',
+                        'PDF, JPG ou PNG',
                         style: TextStyle(
                           fontSize: 12,
                           color: AppColors.textMuted,
@@ -1077,7 +1034,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _justificatifName!,
+                          _pdfFileName!,
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -1086,7 +1043,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const Text(
-                          'Fichier sélectionné',
+                          'Fichier prêt à être envoyé',
                           style: TextStyle(
                             fontSize: 11,
                             color: Color(0xFF059669),
@@ -1108,16 +1065,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
 
-        // Message d'erreur
-        if (_justificatifError && _justificatifName == null) ...[
+        if (_justificatifError && _pdfFileName == null) ...[
           const SizedBox(height: 6),
           const Row(
             children: [
               Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 14),
               SizedBox(width: 4),
-              Text(
-                'Un justificatif est requis pour les comptes professionnels.',
-                style: TextStyle(fontSize: 11, color: Color(0xFFEF4444)),
+              Expanded(
+                child: Text(
+                  'Un justificatif est requis pour les comptes professionnels.',
+                  style: TextStyle(fontSize: 11, color: Color(0xFFEF4444)),
+                ),
               ),
             ],
           ),
@@ -1127,7 +1085,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   // ──────────────────────────────────────────────────────────────
-  // CGU + ERREUR + BOUTON
+  // CGU + ERREUR + BOUTONS
   // ──────────────────────────────────────────────────────────────
 
   Widget _buildTermsCheckbox() {
@@ -1197,7 +1155,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                   ),
-                  const TextSpan(text: '.'),
                 ],
               ),
             ),
@@ -1207,87 +1164,79 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildErrorBanner() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFFECACA), width: 1),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              _errorMessage!,
-              style: const TextStyle(fontSize: 13, color: Color(0xFFDC2626)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSubmitButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _loading ? null : _register,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: AppColors.primary.withOpacity(0.6),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          elevation: 0,
-        ),
-        child:
-            _loading
-                ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
-                : const Text(
-                  'Créer mon compte',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                ),
-      ),
-    );
-  }
-
-  Widget _buildLoginLink() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildErrorBanner() => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFEF2F2),
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: const Color(0xFFFECACA), width: 1),
+    ),
+    child: Row(
       children: [
-        const Text(
-          'Déjà un compte ? ',
-          style: TextStyle(fontSize: 13, color: AppColors.textMuted),
-        ),
-        GestureDetector(
-          onTap: () => Navigator.pushNamed(context, AppRoutes.login),
-          child: const MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: Text(
-              'Se connecter',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primary,
-                decoration: TextDecoration.underline,
-                decorationColor: AppColors.primary,
-              ),
-            ),
+        const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 18),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            _errorMessage!,
+            style: const TextStyle(fontSize: 13, color: Color(0xFFDC2626)),
           ),
         ),
       ],
-    );
-  }
+    ),
+  );
+
+  Widget _buildSubmitButton() => SizedBox(
+    width: double.infinity,
+    child: ElevatedButton(
+      onPressed: _loading ? null : _register,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        disabledBackgroundColor: AppColors.primary.withOpacity(0.6),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        elevation: 0,
+      ),
+      child:
+          _loading
+              ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+              : const Text(
+                'Créer mon compte',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+              ),
+    ),
+  );
+
+  Widget _buildLoginLink() => Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      const Text(
+        'Déjà un compte ? ',
+        style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+      ),
+      GestureDetector(
+        onTap: () => Navigator.pushNamed(context, AppRoutes.login),
+        child: const MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: Text(
+            'Se connecter',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary,
+              decoration: TextDecoration.underline,
+              decorationColor: AppColors.primary,
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
 }
