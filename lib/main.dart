@@ -6,13 +6,13 @@ import 'firebase_options.dart';
 import 'style/constants/app_routes.dart';
 import 'views/client/acheteur_home_screen.dart';
 import 'views/visiteur/boutique_screen.dart';
-import 'views/client/cart_screen.dart';
+import 'views/client/paniercart_screen.dart';
 import 'views/visiteur/cgv_page.dart';
 import 'views/visiteur/contact.dart';
 import 'views/visiteur/forgot_password_screen.dart';
 import 'views/visiteur/home_page.dart';
 import 'views/visiteur/login.dart';
-import 'views/visiteur/product_detail_screen.dart';
+import 'views/client/product_detail_screen.dart';
 import 'views/visiteur/sinscrire.dart';
 import 'views/client/validerCommandpage.dart';
 

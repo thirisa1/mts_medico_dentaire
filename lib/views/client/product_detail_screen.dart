@@ -241,11 +241,147 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   // ── Panier ────────────────────────────────────────────────────
 
-  void _addToCart() {
+  // void _addToCart() {
+  //   if (!_isLoggedIn) {
+  //     _showLoginDialog();
+  //     return;
+  //   }
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(
+  //       content: Text('« ${_data!['nom']} » × $_quantity ajouté(s) au panier'),
+  //       backgroundColor: AppColors.primary,
+  //       behavior: SnackBarBehavior.floating,
+  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+  //     ),
+  //   );
+  // }
+
+  Future<void> _addToCart() async {
     if (!_isLoggedIn) {
       _showLoginDialog();
       return;
     }
+
+    //  Vérifier si le produit est autorisé pour ce client
+    final acheteurs =
+        (_data!['achteurAutoris'] as List?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
+
+    // Si le produit est réservé aux professionnels uniquement
+    if (acheteurs.isNotEmpty &&
+        !acheteurs.contains('Autre') &&
+        acheteurs.contains('Professionnel')) {
+      // Récupérer le rôle du client depuis Firestore
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+      final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final role = userDoc.data()?['role'] ?? 'autre';
+
+      if (role != 'professionnel') {
+        // Afficher l'alerte
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder:
+                (_) => AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  title: const Row(
+                    children: [
+                      Icon(Icons.lock_outline, color: Color(0xFFF59E0B)),
+                      SizedBox(width: 10),
+                      Text(
+                        'Accès restreint',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF7ED),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color(0xFFF59E0B).withOpacity(0.3),
+                          ),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(
+                              Icons.medical_information_outlined,
+                              color: Color(0xFFF59E0B),
+                              size: 20,
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Ce produit est réservé aux professionnels de santé uniquement.',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.primaryDark,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Vous ne pouvez pas acheter ce produit avec votre compte actuel.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textMuted,
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        'Fermer',
+                        style: TextStyle(color: AppColors.textMuted),
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, AppRoutes.register);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF59E0B),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Créer un compte pro',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+          );
+        }
+        return;
+      }
+    }
+
+    //  Autorisé — ajouter au panier
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('« ${_data!['nom']} » × $_quantity ajouté(s) au panier'),

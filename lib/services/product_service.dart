@@ -185,49 +185,7 @@ class ProductService {
     }
   }
 
-  // static Future<List<Product>> fetchProducts() async {
-  //   try {
-  //     final snapshot =
-  //         await _db
-  //             .collection(_collection)
-  //             .get(); // ← simple, sans where ni orderBy
 
-  //     debugPrint('[ProductService] Total docs: ${snapshot.docs.length}');
-
-  //     final products =
-  //         snapshot.docs
-  //             .where((doc) {
-  //               final data = doc.data();
-  //               final deleted = data['deleted'];
-  //               debugPrint('[ProductService] ${doc.id} → deleted=$deleted');
-  //               return deleted != true; // garde tout sauf deleted=true
-  //             })
-  //             .map((doc) {
-  //               final d = doc.data();
-  //               return Product(
-  //                 id: doc.id,
-  //                 name: d['nom'] ?? '',
-  //                 brand: d['marque'] ?? '',
-  //                 category: _categoryFromLabel(d['categorie'] ?? ''),
-  //                 quantity: (d['quantite'] ?? 0) as int,
-  //                 price: (d['prix'] ?? 0).toDouble(),
-  //                 description: d['descreption'] ?? '',
-  //                 allowedBuyers: _buyersFromList(d['achteurAutoris']),
-  //                 imagePath: d['imgProd'],
-  //               );
-  //             })
-  //             .toList();
-
-  //     // Tri local par date décroissante
-  //     products.sort((a, b) => b.id.compareTo(a.id));
-
-  //     debugPrint('[ProductService] Produits après filtre: ${products.length}');
-  //     return products;
-  //   } on FirebaseException catch (e) {
-  //     debugPrint('[ProductService] Erreur fetch: ${e.message}');
-  //     return [];
-  //   }
-  // }
 
   // ── Helpers ──
   static ProductCategory _categoryFromLabel(String label) {

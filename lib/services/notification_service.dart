@@ -128,6 +128,50 @@ class NotificationService {
     await batch.commit();
   }
 
+  // ── Notif admin : nouvelle demande produit ──
+static Future<void> createDemandeNotification({
+  required String demandeId,
+  required String auteur,
+  required String productNom,
+}) async {
+  final adminSnap = await _db.collection('users')
+      .where('role', isEqualTo: 'admin').limit(1).get();
+  if (adminSnap.docs.isEmpty) return;
+  await _db.collection(_col).add({
+    'userId':   adminSnap.docs.first.id,
+    'orderId':  demandeId,
+    'orderRef': productNom,
+    'type':     'nouvelle_demande',
+    'titre':    'Nouvelle demande de produit',
+    'message':  '$auteur souhaite vendre « $productNom » sur le catalogue.',
+    'lu':       false,
+    'createdAt': FieldValue.serverTimestamp(),
+  });
+}
+
+// ── Notif pro : réponse à sa demande ──
+static Future<void> createReponseDemandeNotification({
+  required String userId,
+  required String productNom,
+  required bool approuve,
+  required String motif,
+}) async {
+  await _db.collection(_col).add({
+    'userId':   userId,
+    'orderId':  '',
+    'orderRef': productNom,
+    'type':     approuve ? 'demande_approuvée' : 'demande_refusée',
+    'titre':    approuve
+        ? '✅ Produit approuvé !'
+        : '❌ Demande refusée',
+    'message':  approuve
+        ? '« $productNom » a été approuvé et est maintenant visible dans le catalogue.'
+        : '« $productNom » a été refusé.${motif.isNotEmpty ? '\n\nMotif : $motif' : ''}',
+    'lu':       false,
+    'createdAt': FieldValue.serverTimestamp(),
+  });
+}
+
   // ── Créer une notification pour l'admin (nouveau commentaire) ──
 static Future<void> createCommentaireNotification({
   required String productId,
@@ -162,5 +206,6 @@ static Future<void> createCommentaireNotification({
   });
 
   debugPrint('[NotificationService] ✅ Notif admin commentaire créée');
-}
+ }
+ 
 }

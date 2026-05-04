@@ -1,7 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/cart_service.dart';
+import '../../services/commission_service.dart';
 import '../../services/order_service.dart';
 import '../../services/payment_service.dart';
 import '../../style/constants/app_colors.dart';
@@ -291,6 +292,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         lignes: _items,
         sousTotal: _sousTotal,
         fraisExpedition: _fraisExpedition,
+      );
+
+      final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+      await CommissionService.traiterCommissions(
+        orderId: orderId,
+        clientId: uid,
+        lignes:
+            _items
+                .map(
+                  (i) => {
+                    'productId': i.productId,
+                    'nom': i.nom,
+                    'prix': i.prix,
+                    'quantite': i.quantite,
+                  },
+                )
+                .toList(),
       );
 
       // 3. Vider le panier
@@ -996,7 +1014,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ctrl: _phoneCtrl,
             hint: '05XXXXXXXX',
             type: TextInputType.phone,
-            
           ),
         ],
       ),

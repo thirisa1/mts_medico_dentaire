@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:mts_medico_dentaire/views/admin/demandesven_page.dart';
 import '../../services/order_service.dart';
 import '../../services/notification_service.dart';
 import '../../style/theme/colors.dart';
 import '../../widgets/notification_bell_widget.dart';
 import 'accounts_page.dart';
+import 'dashboard_screen.dart';
 import 'products_page.dart';
 import 'settings_panel.dart';
 
@@ -78,7 +80,8 @@ class _HomePageState extends State<HomePageAdmin>
                   const HomeTab(),
                   const AccountsPage(),
                   const ProductsPage(),
-                  const _DashboardTab(),
+                  const DemandesPage(),
+                  const DashboardScreen(),
                   const SettingsPage(),
                 ],
               ),
@@ -109,50 +112,50 @@ class _HomePageState extends State<HomePageAdmin>
             decoration: const BoxDecoration(gradient: AppColors.appBarGradient),
             child: Row(
               children: [
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                // ✅ LOGO + TEXTE BIEN ALIGNÉS
+                Row(
                   children: [
-                    Text(
-                      'MTS',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 2,
-                      ),
+                    //Image.asset('images/logo.jpg', width: 40, height: 40),
+                    CircleAvatar(
+                      radius: 22,
+                      backgroundColor: Colors.white,
+                      child: Image.asset('images/logo1.png', width: 28),
                     ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Médico-Dentaire',
-                      style: TextStyle(color: Color(0xAAFFFFFF), fontSize: 12),
+                    const SizedBox(width: 12),
+
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'MTS',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Médico-Dentaire',
+                          style: TextStyle(
+                            color: Color(0xAAFFFFFF),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
+
                 const Spacer(),
-                // ← CLOCHE ICI
+
+                // 🔔 Cloche
                 const NotificationBellWidget(),
               ],
             ),
-            // child: const Column(
-            //   crossAxisAlignment: CrossAxisAlignment.start,
-            //   children: [
-            //     Text(
-            //       'MTS',
-            //       style: TextStyle(
-            //         color: Colors.white,
-            //         fontSize: 24,
-            //         fontWeight: FontWeight.w800,
-            //         letterSpacing: 2,
-            //       ),
-            //     ),
-            //     SizedBox(height: 4),
-            //     Text(
-            //       'Médico-Dentaire',
-            //       style: TextStyle(color: Color(0xAAFFFFFF), fontSize: 12),
-            //     ),
-            //   ],
-            // ),
           ),
+
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 20),
@@ -173,14 +176,19 @@ class _HomePageState extends State<HomePageAdmin>
                   index: 2,
                 ),
                 _buildSidebarItem(
+                  icon: Icons.storefront_outlined,
+                  label: 'Demandes Vendeurs',
+                  index: 3,
+                ),
+                _buildSidebarItem(
                   icon: Icons.bar_chart_rounded,
                   label: 'Tableau de bord',
-                  index: 3,
+                  index: 4,
                 ),
                 _buildSidebarItem(
                   icon: Icons.settings_outlined,
                   label: 'Paramètres',
-                  index: 4,
+                  index: 5,
                 ),
               ],
             ),
@@ -273,6 +281,10 @@ class _HomePageState extends State<HomePageAdmin>
           BottomNavigationBarItem(
             icon: Icon(Icons.people_alt_outlined),
             label: 'Comptes',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.inventory_2_outlined),
+            label: 'demandes vendeurs',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.inventory_2_outlined),
@@ -661,28 +673,6 @@ class _HomeTabState extends State<HomeTab> {
                 style: TextStyle(color: AppColors.textHint, fontSize: 13),
               ),
             ],
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: AppColors.cardAccent,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.today_rounded, color: Colors.white, size: 14),
-                SizedBox(width: 6),
-                Text(
-                  "Aujourd'hui",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),
