@@ -1,12 +1,17 @@
-name: CD — Build & Déploiement Firebase Hosting
+name: CD — Déploiement Firebase Hosting
 
 on:
-  push:
-    branches: [main]
+  workflow_run:
+    workflows: ["CI — Analyse & Tests"]
+    types:
+      - completed
 
 jobs:
   deploy:
-    name: Build & Deploy
+    # Exécuter seulement si le CI a réussi
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    name: 🚀 Build & Deploy
     runs-on: ubuntu-latest
 
     steps:
@@ -19,11 +24,9 @@ jobs:
           cache: true
 
       - name:  Build Web Production
-        run: flutter build web --release --web-renderer canvaskit
-        env:
-          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+        run: flutter build web --release
 
-      - name:  Déployer sur Firebase Hosting
+      - name: 🚀 Déployer sur Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
