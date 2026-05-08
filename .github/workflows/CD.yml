@@ -23,7 +23,10 @@ jobs:
           channel: stable
           cache: true
 
-      - name:  Build Web Production
+      - name: Installer dépendances
+        run: flutter pub get    
+
+      - name:  Build Web app
         run: flutter build web --release
 
       - name: 🚀 Déployer sur Firebase Hosting
