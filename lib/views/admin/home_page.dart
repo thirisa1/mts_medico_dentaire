@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mts_medico_dentaire/views/admin/demandesven_page.dart';
+//import 'package:mts_medico_dentaire/views/admin/demandesven_page.dart';
 import '../../services/order_service.dart';
 import '../../services/notification_service.dart';
 import '../../style/theme/colors.dart';
@@ -80,7 +80,7 @@ class _HomePageState extends State<HomePageAdmin>
                   const HomeTab(),
                   const AccountsPage(),
                   const ProductsPage(),
-                  const DemandesPage(),
+                 // const DemandesPage(),
                   const DashboardScreen(),
                   const SettingsPage(),
                 ],
@@ -216,7 +216,7 @@ class _HomePageState extends State<HomePageAdmin>
             decoration: BoxDecoration(
               color:
                   isActive
-                      ? AppColors.primary.withOpacity(0.1)
+                      ? AppColors.primary.withValues(alpha: 0.1)
                       : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               border:
@@ -409,7 +409,7 @@ class _HomeTabState extends State<HomeTab> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF059669).withOpacity(0.1),
+                      color: const Color(0xFF059669).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
@@ -783,7 +783,7 @@ class _HomeTabState extends State<HomeTab> {
           color: selected ? color : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? color : AppColors.textHint.withOpacity(0.4),
+            color: selected ? color : AppColors.textHint.withValues(alpha: 0.4),
             width: 1.5,
           ),
         ),
@@ -804,8 +804,8 @@ class _HomeTabState extends State<HomeTab> {
                 decoration: BoxDecoration(
                   color:
                       selected
-                          ? Colors.white.withOpacity(0.3)
-                          : color.withOpacity(0.15),
+                          ? Colors.white.withValues(alpha: 0.3)
+                          : color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -854,7 +854,7 @@ class _HomeTabState extends State<HomeTab> {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(_statutIcon(order.statut), color: color, size: 22),
@@ -887,7 +887,7 @@ class _HomeTabState extends State<HomeTab> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -1005,10 +1005,10 @@ class _HomeTabState extends State<HomeTab> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: _statutColor(s).withOpacity(0.1),
+                                  color: _statutColor(s).withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: _statutColor(s).withOpacity(0.4),
+                                    color: _statutColor(s).withValues(alpha: 0.4),
                                   ),
                                 ),
                                 child: Text(

@@ -394,7 +394,7 @@ class _ProductsPageState extends State<ProductsPage> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.18),
+                  color: Colors.white.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -725,7 +725,7 @@ class _FilterChip extends StatelessWidget {
           color: isSelected ? color : AppColors.background,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? color : AppColors.textHint.withOpacity(0.4),
+            color: isSelected ? color : AppColors.textHint.withValues(alpha: 0.4),
             width: 1.5,
           ),
         ),

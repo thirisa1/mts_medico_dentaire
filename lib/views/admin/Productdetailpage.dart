@@ -1,3 +1,5 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 import '../../model/product.dart';
 import '../../services/product_service.dart';
@@ -220,7 +222,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
         child: Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(
@@ -237,7 +239,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
             margin: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -276,7 +278,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
       child: Center(
         child: Icon(
           Icons.medical_services_outlined,
-          color: Colors.white.withOpacity(0.4),
+          color: Colors.white.withValues(alpha: 0.4),
           size: 80,
         ),
       ),
