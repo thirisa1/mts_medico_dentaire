@@ -1,0 +1,45 @@
+name: CI — Analyse & Tests
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [develop]
+
+jobs:
+  analyze:
+    name:  Analyse & Sécurité
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: stable
+          cache: true
+
+      - name:  Installer les dépendances
+        run: flutter pub get
+
+      # ── Sécurité ──────────────────────────
+      - name:  Vérifier les secrets exposés
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+
+      # ── Qualité code ───────────────────────
+      - name:  Analyse statique Dart
+        run: flutter analyze
+
+      # ── Tests ──────────────────────────────
+      - name:  Tests unitaires
+        run: flutter test --coverage
+
+      - name:  Upload couverture
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: coverage/lcov.info
